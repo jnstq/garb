@@ -1,11 +1,11 @@
 module Garb
   class ReportParameter
 
-    attr_reader :elements
+    attr_reader :name, :elements
     
-    def initialize(name)
+    def initialize(name, elements=[])
       @name = name
-      @elements = []
+      @elements = [elements].flatten.compact
     end
     
     def name
@@ -20,6 +20,10 @@ module Garb
     def to_params
       value = self.elements.map{|param| Garb.to_google_analytics(param)}.join(',')
       value.empty? ? {} : {self.name => value}
+    end
+
+    def ==(other)
+      name == other.name && elements == other.elements
     end
   end
 end

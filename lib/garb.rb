@@ -15,18 +15,21 @@ end
 require 'garb/version'
 require 'garb/request/authentication'
 require 'garb/request/data'
-# require 'garb/account_feed_request'
+
 require 'garb/session'
 require 'garb/profile_reports'
+
 require 'garb/step'
 require 'garb/destination'
+
 require 'garb/filter_parameters'
 require 'garb/report_parameter'
 require 'garb/result_set'
 require 'garb/report_response'
-# require 'garb/resource'
-# require 'garb/report'
+require 'garb/report_request'
 
+require 'garb/filter'
+require 'garb/query'
 require 'garb/model'
 
 # management
@@ -66,6 +69,10 @@ module Garb
 
   def parse_link(entry, rel)
     entry['link'].detect {|link| link["rel"] == rel}['href']
+  end
+
+  def format_time(t)
+    t.nil? ? "" : t.strftime('%Y-%m-%d')
   end
 
   # new(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil)

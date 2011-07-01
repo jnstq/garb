@@ -12,7 +12,7 @@ module Garb
       @case_sensitive = (attributes['caseSensitive'] == 'true')
 
       step_attributes = attributes[Garb.to_ga('step')]
-      @steps = Array(step_attributes.is_a?(Hash) ? [step_attributes] : step_attributes).map {|s| Step.new(s)}
+      @steps = [step_attributes].flatten.compact.map {|s| Step.new(s)}
     end
   end
 end

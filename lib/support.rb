@@ -3,6 +3,8 @@ class SymbolOperator
     @field, @operator = field, operator
   end unless method_defined?(:initialize)
 
+  attr_reader :field, :operator
+
   def to_google_analytics
     operators = {
       :eql => '==',

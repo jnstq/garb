@@ -16,11 +16,10 @@ end
 $:.reject! { |e| e.include? 'TextMate' }
 
 require 'bundler'
-Bundler.setup(:default, :test)
+Bundler.setup
+Bundler.require(:default, :test)
 
-require 'shoulda'
 require 'minitest/unit'
-require 'mocha'
 
 $:.unshift File.expand_path('../../lib', __FILE__)
 require 'garb'

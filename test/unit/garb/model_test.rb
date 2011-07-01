@@ -13,6 +13,10 @@ module Garb
         @test_model.extend(Garb::Model)
       end
 
+      teardown do
+        
+      end
+
       # public API
       should "be able to define metrics" do
         report_parameter = stub(:<<)
@@ -39,101 +43,46 @@ module Garb
         assert_equal ResultKlass, @test_model.instance_klass
       end
 
-      context "with a profile" do
-        setup do
-          entry = {
-            "title" => "Google Analytics Profile example.com",
-            "link" => [{"rel" => "self", "href" => Garb::Management::Feed::BASE_URL+"/accounts/1189765/webproperties/UA-1189765-1/profiles/98765"}],
-            "dxp:property" => [
-              {"name" => "ga:profileId", "value" => "98765"},
-              {"name" => "ga:accountId", "value" => "1189765"},
-              {"name" => "ga:webPropertyId", "value" => 'UA-1189765-1'}
-            ]
-          }
+      should "have an empty hash for filter definitions" do
+        assert_equal({}, @test_model.filter_definitions)
+      end
 
-          @profile = Garb::Management::Profile.new_from_entry(entry, Session)
+      context "when defining filters" do
+        should "create a class method" do
+          @test_model.filter :high, lambda {}
+          assert_equal true, @test_model.respond_to?(:high)
+        end
+      end
+
+      context "with filters defined" do
+        should "return a Query instance" do
+          block = lambda {}
+          @test_model.filter :high, block
+          query = stub(:apply_filter => "a query")
+          Query.stubs(:new).returns(query)
+
+          assert_equal "a query", @test_model.high("arrrg")
+          assert_received(Query, :new) {|e| e.with(@test_model)}
+          assert_received(query, :apply_filter) {|e| e.with("arrrg", block)}
         end
 
-        context "when getting results" do
-          setup do
-            @response = stub(:body => "raw report data")
-            Request::Data.stubs(:new).returns(stub(:send_request => @response))
-            ReportResponse.stubs(:new).returns(stub(:results => ['result']))
+        should "have the filter stored in an hash" do
+          block = lambda {}
+          @test_model.filter :high, block
 
-            @test_model.stubs(:metrics).returns(stub(:to_params => {'metrics' => 'ga:visits'}))
-            @test_model.stubs(:dimensions).returns(stub(:to_params => {'dimensions' => 'ga:pagePath'}))
-
-            now = Time.now
-            Time.stubs(:now).returns(now)
-
-            # p @profile.id
-
-            @params = {'ids' => Garb.to_ga(@profile.id),
-              'start-date' => (now - Model::MONTH).strftime('%Y-%m-%d'),
-              'end-date' => now.strftime('%Y-%m-%d'),
-              'metrics' => 'ga:visits',
-              'dimensions' => 'ga:pagePath'}
-          end
-
-          should "get all results" do
-            assert_equal ['result'], @test_model.results(@profile)
-            assert_received(ReportResponse, :new) {|e| e.with("raw report data", OpenStruct)}
-            assert_data_params(@params)
-          end
-
-          should "be able to filter" do
-            FilterParameters.stubs(:new).returns(stub(:to_params => {'filters' => "params"}))
-            assert_equal ['result'], @test_model.results(@profile, :filters => {:page_path => '/'})
-
-            assert_data_params(@params.merge({'filters' => 'params'}))
-            assert_received(FilterParameters, :new) {|e| e.with({:page_path => '/'})}
-          end
-
-          should "be able to set the filter segment by id" do
-            assert_equal ['result'], @test_model.results(@profile, :segment_id => 1)
-            assert_data_params(@params.merge({'segment' => 'gaid::1'}))
-          end
-
-          should "be able to sort" do
-            sort_parameter = stub(:<<)
-            sort_parameter.stubs(:to_params => {'sort' => 'sort value'})
-            ReportParameter.stubs(:new).returns(sort_parameter)
-
-            assert_equal ['result'], @test_model.results(@profile, :sort => [:visits])
-            assert_received(sort_parameter, :<<) {|e| e.with([:visits])}
-            assert_data_params(@params.merge({'sort' => 'sort value'}))
-          end
-
-          should "be able to limit" do
-            assert_equal ['result'], @test_model.results(@profile, :limit => 20)
-            assert_data_params(@params.merge({'max-results' => 20}))
-          end
-
-          should "be able to offset" do
-            assert_equal ['result'], @test_model.results(@profile, :offset => 10)
-            assert_data_params(@params.merge({'start-index' => 10}))
-          end
-
-          should "be able to shift the date range" do
-            start_date = (Time.now - 1296000)
-            end_date = Time.now
-
-            assert_equal ['result'], @test_model.results(@profile, :start_date => start_date, :end_date => end_date)
-            assert_data_params(@params.merge({'start-date' => start_date.strftime('%Y-%m-%d'), 'end-date' => end_date.strftime('%Y-%m-%d')}))
-          end
-
-          should "return a set of results in the defined class" do
-            @test_model.stubs(:instance_klass).returns(ResultKlass)
-
-            assert_equal ['result'], @test_model.results(@profile)
-            assert_received(ReportResponse, :new) {|e| e.with("raw report data", ResultKlass)}
-          end
+          assert_equal block, @test_model.filter_definitions[:high]
         end
+      end
 
-        # should "return results as an array of the class it belongs to, if that class is an ActiveRecord descendant"
-        # should "return results as an array of the class it belongs to, if that class is a DataMapper descendant"
-        # should "return results as an array of the class it belongs to, if that class is a MongoMapper descendant"
-        # should "return results as an array of the class it belongs to, if that class is a Mongoid descendant"
+      should "proxy results to a new query" do
+        options = {}
+        profile = stub
+        query = stub(:results => "a query")
+        Query.stubs(:new).returns(query)
+
+        assert_equal "a query", @test_model.results(profile, options)
+        assert_received(Query, :new) {|e| e.with(@test_model)}
+        assert_received(query, :results) {|e| e.with(profile, options)}
       end
     end
   end

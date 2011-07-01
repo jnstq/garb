@@ -2,6 +2,7 @@ module Garb
   class ReportResponse
     KEYS = ['dxp:metric', 'dxp:dimension']
 
+    # we could take the request, and be lazy about loading here, #refactoring
     def initialize(response_body, instance_klass = OpenStruct)
       @xml = response_body
       @instance_klass = instance_klass
